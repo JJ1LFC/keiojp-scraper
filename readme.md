@@ -15,6 +15,7 @@ To make `config.ini`, refer to the `config.ini.example`.
 
 ### to install venv packages
 ```
+python3 -m venv keiojp-scraper
 source keiojp-scraper/venv/activate.fish
 pip install -r requirements.md
 ```
