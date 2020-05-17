@@ -1,0 +1,9 @@
+certifi==2020.4.5.1
+chardet==3.0.4
+chromedriver-binary==83.0.4103.39.0
+configparser==5.0.0
+idna==2.9
+requests==2.23.0
+schedule==0.6.0
+selenium==3.141.0
+urllib3==1.25.9

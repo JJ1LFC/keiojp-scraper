@@ -1,0 +1,7 @@
+[keio]
+ID =  # Shibboleth ID
+PW =  # Shibboleth Password
+
+[slack]
+token =  # Slack bot token
+channel =  # Slack channlel ID to post
