@@ -35,9 +35,14 @@ When text mode is enabled (default by `config.ini.example`), text diff of news i
 To disable text mode, set `textmode` in `[global]` of `config.ini` to `false`.
 
 ## run
-Use screen or something to keep session.
-
 ```
 source keiojp-scraper/venv/activate.fish
 python3 ./scrape.py
+```
+
+## run regularly
+Use crontab.
+Designate python3 under venv.
+```
+10 9,17 * * * /path/to/python3 /path/to/repo/scrape.py
 ```

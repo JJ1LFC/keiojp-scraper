@@ -7,7 +7,6 @@ from selenium.webdriver.common.keys import Keys
 import chromedriver_binary
 import os
 import requests
-import schedule
 import copy
 import re
 import json
@@ -191,7 +190,4 @@ def main():
         os.remove(pngFile)
 
 
-schedule.every().hour.at(':10').do(main)
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+main()
