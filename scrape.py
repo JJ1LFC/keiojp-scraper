@@ -8,12 +8,18 @@ import chromedriver_binary
 import os
 import requests
 import schedule
+import copy
+import re
+import json
+import difflib as diff
+
 
 def setupDriver():
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
-    driver = webdriver.Chrome(options = options)
+    driver = webdriver.Chrome(options=options)
     return driver
+
 
 def readConfig():
     config = ConfigParser()
@@ -25,7 +31,10 @@ def readConfig():
     slack_token = config.get('slack', 'token')
     slack_channel = config.get('slack', 'channel')
 
-    return keio_id, keio_pwd, slack_token, slack_channel
+    text_mode = config.getboolean('global', 'textmode')
+
+    return keio_id, keio_pwd, slack_token, slack_channel, text_mode
+
 
 def login(driver, keio_id, keio_pwd):
     driver.get('https://portal.keio.jp/')
@@ -36,6 +45,7 @@ def login(driver, keio_id, keio_pwd):
     driver.find_element_by_name('_eventId_proceed').send_keys(Keys.ENTER)
 
     return driver
+
 
 def getNewsPic(driver):
     WDW(driver, 15).until(EC.presence_of_all_elements_located)
@@ -50,6 +60,17 @@ def getNewsPic(driver):
     driver.save_screenshot(pngFile)
     return pngFile, driver
 
+
+def getNewsContent(driver):
+    WDW(driver, 15).until(EC.presence_of_all_elements_located)
+    driver.find_element_by_css_selector('.btn.btn-link').send_keys(Keys.ENTER)
+    WDW(driver, 15).until(EC.presence_of_all_elements_located)
+    time.sleep(3)
+    news_content = driver.find_element_by_xpath(
+        "/html/body/div/div[3]/section/div[2]/div[1]/div[4]").text
+    return news_content, driver
+
+
 def sendSlackMsg(pngFile, token, channel):
     url = 'https://slack.com/api/files.upload'
     data = {
@@ -61,35 +82,117 @@ def sendSlackMsg(pngFile, token, channel):
     files = {
         'file': open(pngFile, 'rb')
     }
-    requests.post(url, data = data, files = files)
+    requests.post(url, data=data, files=files)
+
+
+def sendSlackMsgDiff(token, channel, add, delete):
+    att = []
+    if add:
+        att.append(
+            {
+                'color': 'good',
+                'text': '\n'.join(add),
+            }
+        )
+    if delete:
+        att.append(
+            {
+                'color': 'danger',
+                'text': '\n'.join(delete),
+            }
+        )
+    url = 'https://slack.com/api/chat.postMessage'
+    data = {
+        'channel': channel,
+        'attachments': att,
+        'text': 'https://portal.keio.jp'
+    }
+    headers = {"content-type": "application/json",
+               "Authorization": "Bearer "+token}
+    requests.post(url, data=json.dumps(data), headers=headers).json()
+
 
 def sendSlackErr(token, channel, msg):
     url = 'https://slack.com/api/chat.postMessage'
     data = {
         'token': token,
-        'channels': channel,
+        'channel': channel,
         'text': 'an error occurd in ' + msg
     }
-    requests.post(url, data = data)
+    requests.post(url, data=data,)
+
+
+def stringDiff(strNew, strOld):
+    strNew_lines_raw = strNew.splitlines()
+    strNew_lines = []
+    d = ''
+    for s in strNew_lines_raw:
+        if re.match(r'\d{4}\/\d{2}\/\d{2}', s):
+            d = copy.copy(s)
+        else:
+            s = d+' '+s
+            d = ''
+            strNew_lines.append(s)
+    strOld_lines_raw = strOld.splitlines()
+    strOld_lines = []
+    d = ''
+    for s in strOld_lines_raw:
+        if re.match(r'\d{4}\/\d{2}\/\d{2}', s):
+            d = copy.copy(s)
+        else:
+            s = d+' '+s
+            d = ''
+            strOld_lines.append(s)
+    addedLines = []
+    deletedLines = []
+    for d in diff.context_diff(strOld_lines, strNew_lines):
+        if re.match(r'\-', d) and not re.match(r'\-\-\-', d):
+            deletedLines.append(d)
+        elif re.match(r'\+', d) and not re.match(r'\+\+\+', d):
+            addedLines.append(d)
+    return addedLines, deletedLines
 
 
 def main():
-    keio_id, keio_pwd, slack_token, slack_channel = readConfig()
+    keio_id, keio_pwd, slack_token, slack_channel, text_mode = readConfig()
+    try:
+        f = open('.lastContent', 'r', encoding='utf-8')
+        newsContent = f.read()
+        f.close()
+    except:
+        newsContent = ''
     driver = setupDriver()
     try:
         driver = login(driver, keio_id, keio_pwd)
     except:
         sendSlackErr(slack_token, slack_channel, 'login')
+        exit
+    pngFile = ''
+    newNewsContent = ''
     try:
-        pngFile, driver = getNewsPic(driver)
+        if text_mode:
+            newNewsContent, driver = getNewsContent(driver)
+        else:
+            pngFile, driver = getNewsPic(driver)
     except:
         sendSlackErr(slack_token, slack_channel, 'acquire news')
+        exit
     driver.quit()
-    sendSlackMsg(pngFile, slack_token, slack_channel)
-    os.remove(pngFile)
+    if newsContent != newNewsContent and text_mode:
+        add, delete = stringDiff(newNewsContent, newsContent)
+        sendSlackMsgDiff(slack_token, slack_channel,
+                         add, delete)
+        newsContent = newNewsContent
+        f = open('.lastContent', 'w', encoding='utf-8')
+        f.write(newsContent)
+        f.close()
+    elif not text_mode:
+        sendSlackMsg(pngFile, slack_token, slack_channel)
+        os.remove(pngFile)
 
-schedule.every().hour.at(':10').do(main)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# schedule.every().hour.at(':10').do(main)
+main()
+# while True:
+#     schedule.run_pending()
+#     time.sleep(1)
