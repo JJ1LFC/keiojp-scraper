@@ -1,13 +1,13 @@
 # keiojp-scraper
 
-Scrape, take a screenshot of news, and post it to Slack every hour.
+Scrape, take a screenshot or update diff of news, and post it to Slack.
 
 *This repository does not have any relationship with keio.jp portal site.
 
 ## requirement/setup
 - python3
 - venv
-- some packages (see `requirements.md`)
+- some packages (see `requirements.txt`)
 - google chrome
 - `config.ini`
 
@@ -27,6 +27,12 @@ echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | sud
 sudo apt update
 sudo apt install google-chrome-beta
 ```
+
+## text mode
+When text mode is enabled (default by `config.ini.example`), text diff of news is posted instead of the screenshot.
+![](https://user-images.githubusercontent.com/38905988/90960798-2ce0ee80-e4df-11ea-97cd-80a63e4904b5.png)
+
+To disable text mode, set `textmode` in `[global]` of `config.ini` to `false`.
 
 ## run
 Use screen or something to keep session.
