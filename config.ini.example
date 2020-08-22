@@ -1,3 +1,6 @@
+[global]
+textmode = true
+
 [keio]
 ID =  # Shibboleth ID
 PW =  # Shibboleth Password
