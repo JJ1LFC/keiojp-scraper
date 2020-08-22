@@ -191,8 +191,7 @@ def main():
         os.remove(pngFile)
 
 
-# schedule.every().hour.at(':10').do(main)
-main()
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
+schedule.every().hour.at(':10').do(main)
+while True:
+    schedule.run_pending()
+    time.sleep(1)
