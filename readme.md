@@ -17,7 +17,7 @@ To make `config.ini`, refer to the `config.ini.example`.
 ```
 python3 -m venv keiojp-scraper
 source keiojp-scraper/venv/activate.fish
-pip install -r requirements.md
+pip install -r requirements.txt
 ```
 
 ### to get google chrome
